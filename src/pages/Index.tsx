@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { MetricCard } from "@/components/MetricCard";
 import { AuditTable, AuditCandidate } from "@/components/AuditTable";
 import { ROIChart } from "@/components/ROIChart";
+import { AddCustomerDialog } from "@/components/AddCustomerDialog";
+import { UploadExcelDialog } from "@/components/UploadExcelDialog";
 import { DollarSign, TrendingUp, Target, Activity } from "lucide-react";
 
-const sampleData: AuditCandidate[] = [
+const initialData: AuditCandidate[] = [
   {
     claimId: "C-10452",
     provider: "Provider A",
@@ -11,7 +14,9 @@ const sampleData: AuditCandidate[] = [
     predictedROI: 22,
     recoveryPotential: 1760,
     riskLevel: "High",
-    priority: "High"
+    priority: "High",
+    riskHandler: "Sarah Johnson",
+    recommendations: "Immediate review recommended due to high recovery potential and risk level"
   },
   {
     claimId: "C-10689",
@@ -20,7 +25,9 @@ const sampleData: AuditCandidate[] = [
     predictedROI: 5,
     recoveryPotential: 725,
     riskLevel: "Low",
-    priority: "Low"
+    priority: "Low",
+    riskHandler: "Mike Chen",
+    recommendations: "Standard review process, low priority queue"
   },
   {
     claimId: "C-10723",
@@ -29,7 +36,9 @@ const sampleData: AuditCandidate[] = [
     predictedROI: 18,
     recoveryPotential: 1116,
     riskLevel: "Medium",
-    priority: "Medium"
+    priority: "Medium",
+    riskHandler: "Emily Davis",
+    recommendations: "Schedule within 2 weeks, moderate recovery expected"
   },
   {
     claimId: "C-10801",
@@ -38,7 +47,9 @@ const sampleData: AuditCandidate[] = [
     predictedROI: 27,
     recoveryPotential: 5670,
     riskLevel: "High",
-    priority: "High"
+    priority: "High",
+    riskHandler: "Sarah Johnson",
+    recommendations: "Priority audit, significant recovery potential identified"
   },
   {
     claimId: "C-10978",
@@ -47,7 +58,9 @@ const sampleData: AuditCandidate[] = [
     predictedROI: 3,
     recoveryPotential: 117,
     riskLevel: "Low",
-    priority: "Low"
+    priority: "Low",
+    riskHandler: "Tom Wilson",
+    recommendations: "Low value case, minimal resources allocation"
   },
   {
     claimId: "C-11045",
@@ -56,7 +69,9 @@ const sampleData: AuditCandidate[] = [
     predictedROI: 15,
     recoveryPotential: 1920,
     riskLevel: "Medium",
-    priority: "Medium"
+    priority: "Medium",
+    riskHandler: "Emily Davis",
+    recommendations: "Review billing documentation, potential coding errors"
   },
   {
     claimId: "C-11132",
@@ -65,7 +80,9 @@ const sampleData: AuditCandidate[] = [
     predictedROI: 24,
     recoveryPotential: 4440,
     riskLevel: "High",
-    priority: "High"
+    priority: "High",
+    riskHandler: "Sarah Johnson",
+    recommendations: "Complex case requiring senior auditor review"
   },
   {
     claimId: "C-11289",
@@ -74,34 +91,46 @@ const sampleData: AuditCandidate[] = [
     predictedROI: 8,
     recoveryPotential: 448,
     riskLevel: "Low",
-    priority: "Low"
+    priority: "Low",
+    riskHandler: "Tom Wilson",
+    recommendations: "Routine check, no urgent action required"
   },
 ];
 
 const Index = () => {
-  const totalAudits = sampleData.length;
-  const averageROI = (sampleData.reduce((sum, item) => sum + item.predictedROI, 0) / totalAudits).toFixed(1);
-  const totalRecovery = sampleData.reduce((sum, item) => sum + item.recoveryPotential, 0);
-  const highPriorityCount = sampleData.filter(item => item.priority === "High").length;
+  const [auditData, setAuditData] = useState<AuditCandidate[]>(initialData);
+
+  const totalAudits = auditData.length;
+  const averageROI = (auditData.reduce((sum, item) => sum + item.predictedROI, 0) / totalAudits).toFixed(1);
+  const totalRecovery = auditData.reduce((sum, item) => sum + item.recoveryPotential, 0);
+  const highPriorityCount = auditData.filter(item => item.priority === "High").length;
   const efficiencyRatio = ((totalRecovery / (totalAudits * 500)) * 100).toFixed(1);
 
   const chartData = [
     {
       priority: "High",
-      count: sampleData.filter(item => item.priority === "High").length,
-      totalRecovery: sampleData.filter(item => item.priority === "High").reduce((sum, item) => sum + item.recoveryPotential, 0)
+      count: auditData.filter(item => item.priority === "High").length,
+      totalRecovery: auditData.filter(item => item.priority === "High").reduce((sum, item) => sum + item.recoveryPotential, 0)
     },
     {
       priority: "Medium",
-      count: sampleData.filter(item => item.priority === "Medium").length,
-      totalRecovery: sampleData.filter(item => item.priority === "Medium").reduce((sum, item) => sum + item.recoveryPotential, 0)
+      count: auditData.filter(item => item.priority === "Medium").length,
+      totalRecovery: auditData.filter(item => item.priority === "Medium").reduce((sum, item) => sum + item.recoveryPotential, 0)
     },
     {
       priority: "Low",
-      count: sampleData.filter(item => item.priority === "Low").length,
-      totalRecovery: sampleData.filter(item => item.priority === "Low").reduce((sum, item) => sum + item.recoveryPotential, 0)
+      count: auditData.filter(item => item.priority === "Low").length,
+      totalRecovery: auditData.filter(item => item.priority === "Low").reduce((sum, item) => sum + item.recoveryPotential, 0)
     },
   ];
+
+  const handleAddCustomer = (customer: AuditCandidate) => {
+    setAuditData(prev => [...prev, customer]);
+  };
+
+  const handleUploadCustomers = (customers: AuditCandidate[]) => {
+    setAuditData(prev => [...prev, ...customers]);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -149,11 +178,17 @@ const Index = () => {
 
         {/* Table */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-foreground">Audit Candidates</h2>
-            <p className="text-sm text-muted-foreground">Click column headers to sort</p>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">Audit Candidates</h2>
+              <p className="text-sm text-muted-foreground">Click column headers to sort</p>
+            </div>
+            <div className="flex gap-2">
+              <AddCustomerDialog onAdd={handleAddCustomer} />
+              <UploadExcelDialog onUpload={handleUploadCustomers} />
+            </div>
           </div>
-          <AuditTable data={sampleData} />
+          <AuditTable data={auditData} />
         </div>
       </div>
     </div>

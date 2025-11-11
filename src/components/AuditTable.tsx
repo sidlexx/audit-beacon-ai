@@ -11,6 +11,8 @@ export interface AuditCandidate {
   recoveryPotential: number;
   riskLevel: 'High' | 'Medium' | 'Low';
   priority: 'High' | 'Medium' | 'Low';
+  riskHandler: string;
+  recommendations: string;
 }
 
 interface AuditTableProps {
@@ -94,6 +96,8 @@ export const AuditTable = ({ data }: AuditTableProps) => {
             </TableHead>
             <TableHead>Risk Level</TableHead>
             <TableHead>Priority</TableHead>
+            <TableHead>Risk Handler</TableHead>
+            <TableHead>Recommendations</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -113,6 +117,10 @@ export const AuditTable = ({ data }: AuditTableProps) => {
                 <Badge className={getPriorityColor(audit.priority)}>
                   {audit.priority}
                 </Badge>
+              </TableCell>
+              <TableCell>{audit.riskHandler}</TableCell>
+              <TableCell className="max-w-xs truncate" title={audit.recommendations}>
+                {audit.recommendations}
               </TableCell>
             </TableRow>
           ))}
