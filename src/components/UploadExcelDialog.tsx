@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, FileSpreadsheet } from "lucide-react";
 import { AuditCandidate } from "./AuditTable";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
 
 interface UploadExcelDialogProps {
@@ -14,7 +15,10 @@ const REQUIRED_COLUMNS = [
   "Claim ID",
   "Provider",
   "Claim Amount",
-  "Predicted ROI",
+  "Claim Complexity",
+  "Provider History Score",
+  "Documentation Quality",
+  "Audit Success Rate",
   "Recovery Potential",
   "Risk Level",
   "Priority",
@@ -31,10 +35,10 @@ export const UploadExcelDialog = ({ onUpload }: UploadExcelDialogProps) => {
     return REQUIRED_COLUMNS.every(col => headers.includes(col));
   };
 
-  const parseExcelFile = (file: File) => {
+  const parseExcelFile = async (file: File) => {
     const reader = new FileReader();
     
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = e.target?.result;
         const workbook = XLSX.read(data, { type: 'binary' });
@@ -64,15 +68,46 @@ export const UploadExcelDialog = ({ onUpload }: UploadExcelDialogProps) => {
 
         const customers: AuditCandidate[] = [];
         
+        toast({
+          title: "Processing",
+          description: `Predicting ROI for ${jsonData.length - 1} customer(s)...`
+        });
+
         for (let i = 1; i < jsonData.length; i++) {
           const row = jsonData[i];
           if (!row || row.length === 0) continue;
 
+          const claimAmount = Number(row[headers.indexOf("Claim Amount")] || 0);
+          const claimComplexity = Number(row[headers.indexOf("Claim Complexity")] || 5);
+          const providerHistoryScore = Number(row[headers.indexOf("Provider History Score")] || 5);
+          const documentationQuality = Number(row[headers.indexOf("Documentation Quality")] || 5);
+          const auditSuccessRate = Number(row[headers.indexOf("Audit Success Rate")] || 50);
+
+          // Call ROI prediction for each row
+          const { data: predictionData, error: predictionError } = await supabase.functions.invoke('predict-roi', {
+            body: {
+              claimAmount,
+              claimComplexity,
+              providerHistoryScore,
+              documentationQuality,
+              auditSuccessRate
+            }
+          });
+
+          if (predictionError) {
+            console.error("Prediction error for row", i, predictionError);
+            continue;
+          }
+
           const customer: AuditCandidate = {
             claimId: String(row[headers.indexOf("Claim ID")] || ""),
             provider: String(row[headers.indexOf("Provider")] || ""),
-            claimAmount: Number(row[headers.indexOf("Claim Amount")] || 0),
-            predictedROI: Number(row[headers.indexOf("Predicted ROI")] || 0),
+            claimAmount,
+            claimComplexity,
+            providerHistoryScore,
+            documentationQuality,
+            auditSuccessRate,
+            predictedROI: predictionData.predictedROI,
             recoveryPotential: Number(row[headers.indexOf("Recovery Potential")] || 0),
             riskLevel: (row[headers.indexOf("Risk Level")] || "Medium") as 'High' | 'Medium' | 'Low',
             priority: (row[headers.indexOf("Priority")] || "Medium") as 'High' | 'Medium' | 'Low',
@@ -95,7 +130,7 @@ export const UploadExcelDialog = ({ onUpload }: UploadExcelDialogProps) => {
         onUpload(customers);
         toast({
           title: "Upload Successful",
-          description: `${customers.length} customer(s) imported successfully.`
+          description: `${customers.length} customer(s) imported with AI-predicted ROI.`
         });
         setOpen(false);
       } catch (error) {

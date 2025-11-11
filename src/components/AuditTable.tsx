@@ -7,6 +7,10 @@ export interface AuditCandidate {
   claimId: string;
   provider: string;
   claimAmount: number;
+  claimComplexity: number;
+  providerHistoryScore: number;
+  documentationQuality: number;
+  auditSuccessRate: number;
   predictedROI: number;
   recoveryPotential: number;
   riskLevel: 'High' | 'Medium' | 'Low';

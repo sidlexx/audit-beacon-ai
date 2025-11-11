@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
 import { AuditCandidate } from "./AuditTable";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AddCustomerDialogProps {
   onAdd: (customer: AuditCandidate) => void;
@@ -20,47 +21,87 @@ export const AddCustomerDialog = ({ onAdd }: AddCustomerDialogProps) => {
     claimId: "",
     provider: "",
     claimAmount: "",
-    predictedROI: "",
+    claimComplexity: "",
+    providerHistoryScore: "",
+    documentationQuality: "",
+    auditSuccessRate: "",
     recoveryPotential: "",
     riskLevel: "Medium" as 'High' | 'Medium' | 'Low',
     priority: "Medium" as 'High' | 'Medium' | 'Low',
     riskHandler: "",
     recommendations: ""
   });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const newCustomer: AuditCandidate = {
-      claimId: formData.claimId,
-      provider: formData.provider,
-      claimAmount: parseFloat(formData.claimAmount),
-      predictedROI: parseFloat(formData.predictedROI),
-      recoveryPotential: parseFloat(formData.recoveryPotential),
-      riskLevel: formData.riskLevel,
-      priority: formData.priority,
-      riskHandler: formData.riskHandler,
-      recommendations: formData.recommendations
-    };
+    setIsLoading(true);
 
-    onAdd(newCustomer);
-    toast({
-      title: "Customer Added",
-      description: `${formData.claimId} has been added successfully.`
-    });
-    
-    setFormData({
-      claimId: "",
-      provider: "",
-      claimAmount: "",
-      predictedROI: "",
-      recoveryPotential: "",
-      riskLevel: "Medium",
-      priority: "Medium",
-      riskHandler: "",
-      recommendations: ""
-    });
-    setOpen(false);
+    try {
+      // Call the ROI prediction function
+      const { data: predictionData, error: predictionError } = await supabase.functions.invoke('predict-roi', {
+        body: {
+          claimAmount: parseFloat(formData.claimAmount),
+          claimComplexity: parseFloat(formData.claimComplexity),
+          providerHistoryScore: parseFloat(formData.providerHistoryScore),
+          documentationQuality: parseFloat(formData.documentationQuality),
+          auditSuccessRate: parseFloat(formData.auditSuccessRate)
+        }
+      });
+
+      if (predictionError) {
+        throw predictionError;
+      }
+
+      const predictedROI = predictionData.predictedROI;
+      
+      const newCustomer: AuditCandidate = {
+        claimId: formData.claimId,
+        provider: formData.provider,
+        claimAmount: parseFloat(formData.claimAmount),
+        claimComplexity: parseFloat(formData.claimComplexity),
+        providerHistoryScore: parseFloat(formData.providerHistoryScore),
+        documentationQuality: parseFloat(formData.documentationQuality),
+        auditSuccessRate: parseFloat(formData.auditSuccessRate),
+        predictedROI: predictedROI,
+        recoveryPotential: parseFloat(formData.recoveryPotential),
+        riskLevel: formData.riskLevel,
+        priority: formData.priority,
+        riskHandler: formData.riskHandler,
+        recommendations: formData.recommendations
+      };
+
+      onAdd(newCustomer);
+      toast({
+        title: "Customer Added",
+        description: `${formData.claimId} has been added with predicted ROI of ${predictedROI}%`
+      });
+      
+      setFormData({
+        claimId: "",
+        provider: "",
+        claimAmount: "",
+        claimComplexity: "",
+        providerHistoryScore: "",
+        documentationQuality: "",
+        auditSuccessRate: "",
+        recoveryPotential: "",
+        riskLevel: "Medium",
+        priority: "Medium",
+        riskHandler: "",
+        recommendations: ""
+      });
+      setOpen(false);
+    } catch (error) {
+      console.error("Error adding customer:", error);
+      toast({
+        title: "Error",
+        description: "Failed to predict ROI. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -102,40 +143,88 @@ export const AddCustomerDialog = ({ onAdd }: AddCustomerDialogProps) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="claimAmount">Claim Amount *</Label>
-              <Input
-                id="claimAmount"
-                type="number"
-                required
-                value={formData.claimAmount}
-                onChange={(e) => setFormData({ ...formData, claimAmount: e.target.value })}
-                placeholder="8000"
-              />
+          <div className="space-y-2">
+            <Label htmlFor="claimAmount">Claim Amount *</Label>
+            <Input
+              id="claimAmount"
+              type="number"
+              required
+              value={formData.claimAmount}
+              onChange={(e) => setFormData({ ...formData, claimAmount: e.target.value })}
+              placeholder="8000"
+            />
+          </div>
+
+          <div className="bg-muted p-4 rounded-md space-y-4">
+            <h3 className="font-semibold text-sm">ML Prediction Features</h3>
+            <p className="text-xs text-muted-foreground">These features will be used to predict the ROI using machine learning</p>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="claimComplexity">Claim Complexity (1-10) *</Label>
+                <Input
+                  id="claimComplexity"
+                  type="number"
+                  min="1"
+                  max="10"
+                  required
+                  value={formData.claimComplexity}
+                  onChange={(e) => setFormData({ ...formData, claimComplexity: e.target.value })}
+                  placeholder="7"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="providerHistoryScore">Provider History (1-10) *</Label>
+                <Input
+                  id="providerHistoryScore"
+                  type="number"
+                  min="1"
+                  max="10"
+                  required
+                  value={formData.providerHistoryScore}
+                  onChange={(e) => setFormData({ ...formData, providerHistoryScore: e.target.value })}
+                  placeholder="5"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="documentationQuality">Documentation Quality (1-10) *</Label>
+                <Input
+                  id="documentationQuality"
+                  type="number"
+                  min="1"
+                  max="10"
+                  required
+                  value={formData.documentationQuality}
+                  onChange={(e) => setFormData({ ...formData, documentationQuality: e.target.value })}
+                  placeholder="6"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="auditSuccessRate">Audit Success Rate (%) *</Label>
+                <Input
+                  id="auditSuccessRate"
+                  type="number"
+                  min="0"
+                  max="100"
+                  required
+                  value={formData.auditSuccessRate}
+                  onChange={(e) => setFormData({ ...formData, auditSuccessRate: e.target.value })}
+                  placeholder="75"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="predictedROI">Predicted ROI (%) *</Label>
-              <Input
-                id="predictedROI"
-                type="number"
-                required
-                value={formData.predictedROI}
-                onChange={(e) => setFormData({ ...formData, predictedROI: e.target.value })}
-                placeholder="22"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="recoveryPotential">Recovery Potential *</Label>
-              <Input
-                id="recoveryPotential"
-                type="number"
-                required
-                value={formData.recoveryPotential}
-                onChange={(e) => setFormData({ ...formData, recoveryPotential: e.target.value })}
-                placeholder="1760"
-              />
-            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="recoveryPotential">Recovery Potential *</Label>
+            <Input
+              id="recoveryPotential"
+              type="number"
+              required
+              value={formData.recoveryPotential}
+              onChange={(e) => setFormData({ ...formData, recoveryPotential: e.target.value })}
+              placeholder="1760"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -191,10 +280,12 @@ export const AddCustomerDialog = ({ onAdd }: AddCustomerDialogProps) => {
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
               Cancel
             </Button>
-            <Button type="submit">Add Customer</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Predicting ROI..." : "Add Customer"}
+            </Button>
           </div>
         </form>
       </DialogContent>
