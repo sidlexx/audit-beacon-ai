@@ -1,11 +1,160 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { MetricCard } from "@/components/MetricCard";
+import { AuditTable, AuditCandidate } from "@/components/AuditTable";
+import { ROIChart } from "@/components/ROIChart";
+import { DollarSign, TrendingUp, Target, Activity } from "lucide-react";
+
+const sampleData: AuditCandidate[] = [
+  {
+    claimId: "C-10452",
+    provider: "Provider A",
+    claimAmount: 8000,
+    predictedROI: 22,
+    recoveryPotential: 1760,
+    riskLevel: "High",
+    priority: "High"
+  },
+  {
+    claimId: "C-10689",
+    provider: "Provider B",
+    claimAmount: 14500,
+    predictedROI: 5,
+    recoveryPotential: 725,
+    riskLevel: "Low",
+    priority: "Low"
+  },
+  {
+    claimId: "C-10723",
+    provider: "Provider C",
+    claimAmount: 6200,
+    predictedROI: 18,
+    recoveryPotential: 1116,
+    riskLevel: "Medium",
+    priority: "Medium"
+  },
+  {
+    claimId: "C-10801",
+    provider: "Provider D",
+    claimAmount: 21000,
+    predictedROI: 27,
+    recoveryPotential: 5670,
+    riskLevel: "High",
+    priority: "High"
+  },
+  {
+    claimId: "C-10978",
+    provider: "Provider E",
+    claimAmount: 3900,
+    predictedROI: 3,
+    recoveryPotential: 117,
+    riskLevel: "Low",
+    priority: "Low"
+  },
+  {
+    claimId: "C-11045",
+    provider: "Provider F",
+    claimAmount: 12800,
+    predictedROI: 15,
+    recoveryPotential: 1920,
+    riskLevel: "Medium",
+    priority: "Medium"
+  },
+  {
+    claimId: "C-11132",
+    provider: "Provider G",
+    claimAmount: 18500,
+    predictedROI: 24,
+    recoveryPotential: 4440,
+    riskLevel: "High",
+    priority: "High"
+  },
+  {
+    claimId: "C-11289",
+    provider: "Provider H",
+    claimAmount: 5600,
+    predictedROI: 8,
+    recoveryPotential: 448,
+    riskLevel: "Low",
+    priority: "Low"
+  },
+];
 
 const Index = () => {
+  const totalAudits = sampleData.length;
+  const averageROI = (sampleData.reduce((sum, item) => sum + item.predictedROI, 0) / totalAudits).toFixed(1);
+  const totalRecovery = sampleData.reduce((sum, item) => sum + item.recoveryPotential, 0);
+  const highPriorityCount = sampleData.filter(item => item.priority === "High").length;
+  const efficiencyRatio = ((totalRecovery / (totalAudits * 500)) * 100).toFixed(1);
+
+  const chartData = [
+    {
+      priority: "High",
+      count: sampleData.filter(item => item.priority === "High").length,
+      totalRecovery: sampleData.filter(item => item.priority === "High").reduce((sum, item) => sum + item.recoveryPotential, 0)
+    },
+    {
+      priority: "Medium",
+      count: sampleData.filter(item => item.priority === "Medium").length,
+      totalRecovery: sampleData.filter(item => item.priority === "Medium").reduce((sum, item) => sum + item.recoveryPotential, 0)
+    },
+    {
+      priority: "Low",
+      count: sampleData.filter(item => item.priority === "Low").length,
+      totalRecovery: sampleData.filter(item => item.priority === "Low").reduce((sum, item) => sum + item.recoveryPotential, 0)
+    },
+  ];
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        {/* Header */}
+        <header className="space-y-2">
+          <h1 className="text-4xl font-bold text-foreground">Audit ROI Predictor</h1>
+          <p className="text-muted-foreground text-lg">AI-powered audit optimization and ROI prediction platform</p>
+        </header>
+
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MetricCard
+            title="Total Audits"
+            value={totalAudits.toString()}
+            subtitle={`${highPriorityCount} high priority`}
+            icon={Activity}
+            trend={{ value: "12%", isPositive: true }}
+          />
+          <MetricCard
+            title="Average ROI"
+            value={`${averageROI}%`}
+            subtitle="Predicted return"
+            icon={TrendingUp}
+            trend={{ value: "3.2%", isPositive: true }}
+          />
+          <MetricCard
+            title="Total Recovery"
+            value={`$${totalRecovery.toLocaleString()}`}
+            subtitle="Projected amount"
+            icon={DollarSign}
+            trend={{ value: "8.5%", isPositive: true }}
+          />
+          <MetricCard
+            title="Efficiency Ratio"
+            value={`${efficiencyRatio}%`}
+            subtitle="Recovery vs. cost"
+            icon={Target}
+            trend={{ value: "5.1%", isPositive: true }}
+          />
+        </div>
+
+        {/* Chart */}
+        <ROIChart data={chartData} />
+
+        {/* Table */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-foreground">Audit Candidates</h2>
+            <p className="text-sm text-muted-foreground">Click column headers to sort</p>
+          </div>
+          <AuditTable data={sampleData} />
+        </div>
       </div>
     </div>
   );
