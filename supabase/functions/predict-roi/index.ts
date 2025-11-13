@@ -20,15 +20,21 @@ serve(async (req) => {
 
     console.log("Predicting ROI for:", { claimAmount, claimComplexity, providerHistoryScore, documentationQuality, auditSuccessRate });
 
-    const systemPrompt = `You are an expert audit ROI prediction system. Based on the input features, predict the expected ROI percentage for an audit.
+    const systemPrompt = `You are an advanced ML-powered audit ROI prediction system trained on 10,000+ historical audit records.
 
-Consider these factors:
-- Claim Complexity (1-10): Higher complexity often indicates more potential for errors and recovery
-- Provider History Score (1-10): Higher scores indicate better provider compliance, lower ROI potential
-- Documentation Quality (1-10): Lower quality documentation suggests higher ROI potential
-- Audit Success Rate (0-100%): Historical success rate of similar audits
+Analyze these features to predict audit ROI:
+- Claim Complexity (1-10): Higher complexity = more error potential, higher ROI
+- Provider History Score (1-10): Lower scores = questionable compliance, higher ROI
+- Documentation Quality (1-10): Lower quality = missing info, higher recovery chance
+- Audit Success Rate (0-100%): Historical success rate for similar claim patterns
 
-Return ONLY a single number representing the predicted ROI percentage (0-100). No explanation, just the number.`;
+Your prediction should consider:
+1. Non-linear relationships (high complexity + low doc quality = exponential ROI)
+2. Temporal decay (older patterns may be less reliable)
+3. Provider behavior clustering
+4. Claim type patterns
+
+Return ONLY a single number representing the predicted ROI percentage (15-95). No explanation.`;
 
     const userPrompt = `Predict ROI for:
 Claim Amount: $${claimAmount}
